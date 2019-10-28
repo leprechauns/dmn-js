@@ -25,6 +25,25 @@ export default class HitPolicyCellContextMenu extends Component {
   constructor(props, context) {
     super(props, context);
 
+    const {
+      changeSupport,
+      injector
+    } = context;
+
+    this._changeSupport = changeSupport;
+    this._modeling = injector.get('modeling');
+
+    const sheet = this._sheet = injector.get('sheet');
+    const root = sheet.getRoot(),
+          businessObject = root.businessObject,
+          hitPolicy = businessObject.hitPolicy,
+          aggregation = businessObject.aggregation;
+
+    this.state = {
+      hitPolicy,
+      aggregation
+    };
+
     this.onHitPolicyChange = this.onHitPolicyChange.bind(this);
     this.onAggregationChange = this.onAggregationChange.bind(this);
     this.onElementsChanged = this.onElementsChanged.bind(this);
@@ -43,41 +62,34 @@ export default class HitPolicyCellContextMenu extends Component {
   }
 
   onElementsChanged() {
-    this.forceUpdate();
-  }
-
-  componentWillMount() {
-    const { injector } = this.context;
-
-    const changeSupport = this._changeSupport = this.context.changeSupport;
-
-    this._sheet = injector.get('sheet');
-    this._modeling = injector.get('modeling');
-
     const root = this._sheet.getRoot(),
           businessObject = root.businessObject,
           hitPolicy = businessObject.hitPolicy,
           aggregation = businessObject.aggregation;
 
-    changeSupport.onElementsChanged(root.id, this.onElementsChanged);
-
-    this.state = {
+    this.setState({
       hitPolicy,
-      aggregation
-    };
+      aggregation: aggregation || ''
+    });
   }
 
-  componentWillUnmount() {
+  componentDidMount() {
     const root = this._sheet.getRoot();
 
     this._changeSupport.onElementsChanged(root.id, this.onElementsChanged);
   }
 
+  componentWillUnmount() {
+    const root = this._sheet.getRoot();
+
+    this._changeSupport.offElementsChanged(root.id, this.onElementsChanged);
+  }
+
   render() {
-    const root = this._sheet.getRoot(),
-          businessObject = root.businessObject,
-          hitPolicy = businessObject.hitPolicy,
-          aggregation = businessObject.aggregation;
+    const {
+      aggregation,
+      hitPolicy
+    } = this.state;
 
     const hitPolicyOptions = HIT_POLICIES.map(h => {
       return {
@@ -88,7 +100,7 @@ export default class HitPolicyCellContextMenu extends Component {
 
     const aggregationOptions = LIST_FUNCTIONS.map(l => {
       return {
-        label: l === 'NONE' ? '-' : l,
+        label: l,
         value: l
       };
     });
