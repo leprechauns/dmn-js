@@ -13,10 +13,16 @@ const HIT_POLICIES = [
 ];
 
 const LIST_FUNCTIONS = [
+  'LIST',
   'SUM',
   'MIN',
   'MAX',
   'COUNT'
+];
+
+const EMPTY_AGGREGATIONS = [
+  '',
+  'LIST'
 ];
 
 
@@ -37,7 +43,7 @@ export default class HitPolicyCellContextMenu extends Component {
     const root = sheet.getRoot(),
           businessObject = root.businessObject,
           hitPolicy = businessObject.hitPolicy,
-          aggregation = businessObject.aggregation;
+          aggregation = businessObject.aggregation || 'LIST';
 
     this.state = {
       hitPolicy,
@@ -50,11 +56,16 @@ export default class HitPolicyCellContextMenu extends Component {
   }
 
   onHitPolicyChange(hitPolicy) {
-    this._modeling.editHitPolicy(hitPolicy, undefined);
+    const root = this._sheet.getRoot(),
+          businessObject = root.businessObject;
+
+    const aggregation = hitPolicy === 'COLLECT' ? businessObject.aggregation : undefined;
+
+    this._modeling.editHitPolicy(hitPolicy, aggregation);
   }
 
   onAggregationChange(value) {
-    let aggregation = value === ''
+    const aggregation = EMPTY_AGGREGATIONS.includes(value)
       ? undefined
       : value;
 
@@ -64,12 +75,21 @@ export default class HitPolicyCellContextMenu extends Component {
   onElementsChanged() {
     const root = this._sheet.getRoot(),
           businessObject = root.businessObject,
-          hitPolicy = businessObject.hitPolicy,
-          aggregation = businessObject.aggregation;
+          hitPolicy = businessObject.hitPolicy;
+
+    let aggregation;
+
+    if (hitPolicy === 'COLLECT') {
+      aggregation = businessObject.aggregation;
+
+      if (!aggregation && EMPTY_AGGREGATIONS.includes(this.state.aggregation)) {
+        aggregation = this.state.aggregation;
+      }
+    }
 
     this.setState({
-      hitPolicy,
-      aggregation: aggregation || ''
+      aggregation,
+      hitPolicy
     });
   }
 
